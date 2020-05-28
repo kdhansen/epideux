@@ -1,0 +1,3 @@
+add_executable(test_small_sim test_small_simulation.cpp)
+target_link_libraries(test_small_sim epideux_engine)
+add_test(NAME small_simulation COMMAND test_small_sim)
