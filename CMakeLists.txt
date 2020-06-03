@@ -11,8 +11,11 @@ src/itinerary_entry.cpp
 include/epideux/epideux.h)
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
-include(CTest)
-add_subdirectory(tests)
+  include(CTest)
+  add_subdirectory(tests)
 endif()
 
-add_subdirectory(experiments)
+option(BUILD_EXAMPLES "Build the C++ examples" ON)
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
