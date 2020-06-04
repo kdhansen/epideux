@@ -22,10 +22,10 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
-#include <random>
 
 #include "spdlog/sinks/basic_file_sink.h"
 
@@ -38,14 +38,9 @@ class Model;
 typedef std::chrono::time_point<std::chrono::system_clock> time_pt;
 typedef std::chrono::system_clock::duration time_duration;
 
-enum class InfectionCategory {
-  Susceptible,
-  Exposed,
-  Infectious,
-  Recovered
-};
+enum class InfectionCategory { Susceptible, Exposed, Infectious, Recovered };
 
-struct SeirReport{
+struct SeirReport {
   std::vector<uint32_t> susceptible;
   std::vector<uint32_t> exposed;
   std::vector<uint32_t> infectious;
@@ -83,7 +78,8 @@ class ItineraryEntry {
 
 class Person {
  public:
-  Person(Model& simulation_model, std::shared_ptr<Location> home);
+  Person(Model& simulation_model, uint32_t id, std::shared_ptr<Location> home,
+         time_duration incubation_time, time_duration disease_time);
   void addItineraryEntry(ItineraryEntry new_entry);
   void infect();
   void updateInfection();
@@ -91,6 +87,7 @@ class Person {
 
  private:
   Model& model_;
+  uint32_t id_;
   std::shared_ptr<Location> home_;
   std::vector<ItineraryEntry> itinerary_;
   InfectionCategory infection_state_;
@@ -103,7 +100,9 @@ class Model {
  public:
   Model();
   std::shared_ptr<Location> createLocation(double beta, std::string name = "");
-  std::shared_ptr<Person> createPerson(std::shared_ptr<Location> home);
+  std::shared_ptr<Person> createPerson(std::shared_ptr<Location> home,
+                                       time_duration incubation_time,
+                                       time_duration disease_time);
   void simulate(time_duration simulation_duration);
   void setStartDate(int year, int month, int day);
   time_pt currentTime();
@@ -114,7 +113,7 @@ class Model {
  private:
   std::vector<std::shared_ptr<Location>> locations_;
   std::vector<std::shared_ptr<Person>> persons_;
-  bool simulation_ready_;
+  bool simulation_ready_ = false;
   std::shared_ptr<spdlog::logger> logger_;
   time_pt current_sim_time_;
   SeirReport report_;
@@ -123,6 +122,8 @@ class Model {
   std::string getCurrentTimeString();
   std::deque<std::pair<time_pt, std::function<void()>>> schedule_;
   std::mt19937 random_generator_;
+  uint32_t last_id_ = 0;
+  uint32_t getNextId();
 };
 
 }  // namespace epideux

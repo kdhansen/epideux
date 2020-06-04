@@ -21,11 +21,14 @@ using namespace std::chrono_literals;
 
 namespace epideux {
 
-Person::Person(Model& simulation_model, std::shared_ptr<Location> home)
+Person::Person(Model& simulation_model, uint32_t id,
+               std::shared_ptr<Location> home, time_duration incubation_time,
+               time_duration disease_time)
     : model_(simulation_model),
+      id_(id),
       home_(home),
-      incubation_time_(4 * 24h),
-      disease_time_(10 * 24h),
+      incubation_time_(incubation_time),
+      disease_time_(disease_time),
       infection_state_(InfectionCategory::Susceptible) {
   home_->enter(*this);
 }
@@ -46,7 +49,8 @@ void Person::updateInfection() {
       (model_.currentTime() > (infected_date_ + incubation_time_))) {
     infection_state_ = InfectionCategory::Infectious;
   } else if ((infection_state_ == InfectionCategory::Infectious) &&
-             (model_.currentTime() > (infected_date_ + disease_time_))) {
+             (model_.currentTime() >
+              (infected_date_ + incubation_time_ + disease_time_))) {
     infection_state_ = InfectionCategory::Recovered;
   }
 }

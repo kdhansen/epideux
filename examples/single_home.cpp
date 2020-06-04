@@ -24,7 +24,7 @@ int main(int argc, char const *argv[]) {
   sim_model.setStartDate(2020, 4, 1);
   auto the_home = sim_model.createLocation(beta);
   for (int i = 0; i < num_people; ++i) {
-    auto a_person = sim_model.createPerson(the_home);
+    auto a_person = sim_model.createPerson(the_home, 4*24h, 5*24h);
   }
   sim_model.getPerson(0)->infect();
 
@@ -37,10 +37,11 @@ int main(int argc, char const *argv[]) {
   auto report = sim_model.getReport();
 
   plt::figure();
-  plt::plot(report.susceptible);
-  plt::plot(report.exposed);
-  plt::plot(report.infectious);
-  plt::plot(report.recovered);
+  plt::named_plot("Susceptible", report.susceptible);
+  plt::named_plot("Exposed", report.exposed);
+  plt::named_plot("Infectious", report.infectious);
+  plt::named_plot("Recovered", report.recovered);
+  plt::legend();
   plt::show();
 
   return 0;

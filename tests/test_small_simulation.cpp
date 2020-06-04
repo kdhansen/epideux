@@ -33,7 +33,7 @@ int main(int argc, char const *argv[]) {
 
   for (int i = 0; i < 10; ++i) {
     auto my_home = sim_model.createLocation(0.7);
-    auto my_person = sim_model.createPerson(my_home);
+    auto my_person = sim_model.createPerson(my_home, 4*24h, 7*24h);
     my_person->addItineraryEntry(school_it);
   }
 

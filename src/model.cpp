@@ -38,8 +38,7 @@ namespace epideux {
 /// function as the second.
 ///
 
-Model::Model()
-    : simulation_ready_(false), report_interval_(24h) {
+Model::Model() : report_interval_(24h) {
   logger_ = spdlog::basic_logger_mt("Model", "logs/epideux-log.txt");
 }
 
@@ -58,10 +57,9 @@ Model::Model()
 void Model::simulate(time_duration simulation_duration) {
   // Generate reporting steps and put into schedule
   time_pt stop_sim_at = current_sim_time_ + simulation_duration;
-  for (time_pt t = current_sim_time_;
-       t < stop_sim_at;
-       t += report_interval_) {
-    schedule_.push_back(std::make_pair(t, std::bind(&Model::collectSeir, this)));
+  for (time_pt t = current_sim_time_; t < stop_sim_at; t += report_interval_) {
+    schedule_.push_back(
+        std::make_pair(t, std::bind(&Model::collectSeir, this)));
   }
 
   // Step through schedule
@@ -107,8 +105,11 @@ std::shared_ptr<Location> Model::createLocation(double beta, std::string name) {
   return l;
 }
 
-std::shared_ptr<Person> Model::createPerson(std::shared_ptr<Location> home) {
-  auto p = std::make_shared<Person>(*this, home);
+std::shared_ptr<Person> Model::createPerson(std::shared_ptr<Location> home,
+                                            time_duration incubation_time,
+                                            time_duration disease_time) {
+  auto p = std::make_shared<Person>(*this, getNextId(), home, incubation_time,
+                                    disease_time);
   persons_.push_back(p);
   return p;
 }
@@ -148,8 +149,7 @@ void Model::collectSeir() {
           r++;
           break;
       }
-  }
-
+    }
   }
 
   report_.susceptible.push_back(s);
@@ -165,5 +165,10 @@ void Model::collectSeir() {
 /// entire simulation run.
 ///
 std::mt19937& Model::randomGenerator() { return random_generator_; };
+
+///
+/// Get the next id for a new agent
+///
+uint32_t Model::getNextId() { return last_id_++; }
 
 }  // namespace epideux
