@@ -37,9 +37,7 @@ Location::Location(Model& simulation_model, double beta, std::string name)
 ///
 /// @returns A reference to the internal list of persons in the location.
 ///
-const std::vector<Person*>& Location::getPersons() const {
-  return persons_;
-}
+const std::vector<Person*>& Location::getPersons() const { return persons_; }
 
 ///
 /// Evaluates any possible infections since last update.
@@ -77,9 +75,11 @@ void Location::updateInfections() {
       });
 
   // Compute the probability of getting infected.
+  auto time_step =
+      std::chrono::duration_cast<std::chrono::seconds>(time_delta).count();
   double prob_of_infection =
-      1 - std::exp(-time_delta.count() * beta_per_sec_ *
-                   num_infectious_persons / double(num_persons_here));
+      1 - std::exp(-beta_per_sec_ * time_step * num_infectious_persons /
+                   num_persons_here);
 
   // Sample a number to infect and select (and infect) them.
   std::binomial_distribution<int> binom_dist(num_persons_here,
