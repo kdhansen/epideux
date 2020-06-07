@@ -22,12 +22,13 @@ int main(int argc, char const *argv[]) {
   // Setup Model
   Model sim_model;
   sim_model.setStartDate(2020, 4, 1);
-  auto the_home = sim_model.createLocation(beta);
+  Location& the_home = sim_model.createLocation(beta);
   for (int i = 0; i < num_people; ++i) {
-    auto a_person = sim_model.createPerson(the_home, 4*24h, 5*24h);
+    Person& a_person = sim_model.createPerson(the_home, 4*24h, 5*24h);
   }
-  sim_model.getPerson(0)->infect();
+  sim_model.getPerson(0).infect();
 
+  // Run model and time it.
   auto start = std::chrono::steady_clock::now();
   sim_model.simulate(24h*sim_days);
   auto end = std::chrono::steady_clock::now();
@@ -36,6 +37,7 @@ int main(int argc, char const *argv[]) {
 
   auto report = sim_model.getReport();
 
+  plt::xkcd();
   plt::figure();
   plt::named_plot("Susceptible", report.susceptible);
   plt::named_plot("Exposed", report.exposed);

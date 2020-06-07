@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <list>
 #include <memory>
 #include <random>
 #include <string>
@@ -50,6 +51,10 @@ struct SeirReport {
 class Location {
  public:
   Location(Model& simulation_model, double beta, std::string name);
+  Location(const Location&) = delete;
+  Location& operator=(const Location&) = delete;
+  Location(Location&&) = delete;
+  Location& operator=(Location&&) = delete;
   const std::vector<Person*>& getPersons() const;
   void updateInfections();
   void enter(Person& new_person);
@@ -65,65 +70,89 @@ class Location {
 
 class ItineraryEntry {
  public:
-  ItineraryEntry(std::shared_ptr<Location> location, time_pt start,
-                 time_pt end);
-  time_pt startTime();
-  time_pt endTime();
-  std::shared_ptr<Location> location();
+  ItineraryEntry(Location& location, time_pt start, time_pt end);
+  time_pt startTime() const;
+  time_pt endTime() const;
+  Location& location() const;
 
  private:
+  Location& location_;
   time_pt start_, end_;
-  std::shared_ptr<Location> location_;
 };
 
 class Person {
  public:
-  Person(Model& simulation_model, uint32_t id, std::shared_ptr<Location> home,
+  Person(Model& simulation_model, uint32_t id, Location& home,
          time_duration incubation_time, time_duration disease_time);
+  Person(const Person&) = delete;
+  Person& operator=(const Person&) = delete;
+  Person(Person&&) = delete;
+  Person& operator=(Person&&) = delete;
   void addItineraryEntry(ItineraryEntry new_entry);
   void infect();
   void updateInfection();
   InfectionCategory infectionState();
+  uint32_t id() const;
 
  private:
   Model& model_;
   uint32_t id_;
-  std::shared_ptr<Location> home_;
+  Location& home_;
   std::vector<ItineraryEntry> itinerary_;
   InfectionCategory infection_state_;
   time_pt infected_date_;
   time_duration incubation_time_;
   time_duration disease_time_;
+  const ItineraryEntry* active_itinerary_entry_;
+  Location* current_location;
+  void moveToLocation(Location& location);
+  void beginItineraryEntry(ItineraryEntry& entry);
+  void endItineraryEntry(ItineraryEntry& entry);
 };
 
 class Model {
  public:
   Model();
-  std::shared_ptr<Location> createLocation(double beta, std::string name = "");
-  std::shared_ptr<Person> createPerson(std::shared_ptr<Location> home,
-                                       time_duration incubation_time,
-                                       time_duration disease_time);
+  Model(const Model&) = delete;
+  Model& operator=(const Model&) = delete;
+  Model(Model&&) = delete;
+  Model& operator=(Model&&) = delete;
+  Location& createLocation(double beta, std::string name = "");
+  Person& createPerson(Location& home, time_duration incubation_time,
+                       time_duration disease_time);
   void simulate(time_duration simulation_duration);
   void setStartDate(int year, int month, int day);
   time_pt currentTime();
-  std::shared_ptr<Person> getPerson(size_t i);
+  Person& getPerson(uint32_t i);
   SeirReport getReport();
   std::mt19937& randomGenerator();
+  void addToSchedule(time_pt scheduled_time, std::function<void()> callback);
 
  private:
-  std::vector<std::shared_ptr<Location>> locations_;
-  std::vector<std::shared_ptr<Person>> persons_;
-  bool simulation_ready_ = false;
+  std::list<Location> locations_;
+  std::list<Person> persons_;
+  bool simulation_running_ = false;
   std::shared_ptr<spdlog::logger> logger_;
   time_pt current_sim_time_;
   SeirReport report_;
   time_duration report_interval_;
   void collectSeir();
+  void stopSimulation();
   std::string getCurrentTimeString();
-  std::deque<std::pair<time_pt, std::function<void()>>> schedule_;
   std::mt19937 random_generator_;
   uint32_t last_id_ = 0;
   uint32_t getNextId();
+
+  struct ScheduleEntry {
+    ScheduleEntry(time_pt t, std::function<void()> cb)
+        : scheduled_time(t), callback(cb){};
+    time_pt scheduled_time;
+    std::function<void()> callback;
+    bool operator<(const ScheduleEntry& rhs) {
+      return scheduled_time < rhs.scheduled_time;
+    }
+  };
+  std::deque<ScheduleEntry> schedule_;
 };
 
 }  // namespace epideux

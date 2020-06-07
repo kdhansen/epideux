@@ -16,7 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <iostream>
-#include <sstream>
 #include "epideux/epideux.h"
 
 int main(int argc, char const *argv[]) {
@@ -26,21 +25,24 @@ int main(int argc, char const *argv[]) {
   Model sim_model;
   sim_model.setStartDate(2020, 4, 1);
 
-  Location& school = sim_model.createLocation(0.7, "School");
+  Location& location1 = sim_model.createLocation(0.7, "Location1");
+  Location& location2 = sim_model.createLocation(0.7, "Location2");
 
-  time_pt start_time;
+  time_pt start_time = sim_model.currentTime() + 1h;
   time_pt end_time = start_time + 2h;
-  ItineraryEntry school_it(school, start_time, end_time);
+  ItineraryEntry loc2_it(location2, start_time, end_time);
 
-  for (int i = 0; i < 10; ++i) {
-    std::stringstream ss;
-    ss << "Home" << i;
-    Location& my_home = sim_model.createLocation(0.7, ss.str());
-    Person& my_person = sim_model.createPerson(my_home, 4*24h, 7*24h);
-    my_person.addItineraryEntry(school_it);
-  }
+  Person& my_person = sim_model.createPerson(location1, 4*24h, 7*24h);
+  my_person.addItineraryEntry(loc2_it);
 
-  sim_model.simulate(24h);
+  std::cout << "Persons in location 1/2: " << location1.getPersons().size()
+            << '/' << location2.getPersons().size();
+
+  sim_model.simulate(2h);
+
+  std::cout << " (2h) ";
+  std::cout << location1.getPersons().size() << '/'
+            << location2.getPersons().size() << std::endl;
 
   return 0;
 }

@@ -21,20 +21,63 @@ using namespace std::chrono_literals;
 
 namespace epideux {
 
-Person::Person(Model& simulation_model, uint32_t id,
-               std::shared_ptr<Location> home, time_duration incubation_time,
-               time_duration disease_time)
+Person::Person(Model& simulation_model, uint32_t id, Location& home,
+               time_duration incubation_time, time_duration disease_time)
     : model_(simulation_model),
       id_(id),
       home_(home),
       incubation_time_(incubation_time),
       disease_time_(disease_time),
-      infection_state_(InfectionCategory::Susceptible) {
-  home_->enter(*this);
+      infection_state_(InfectionCategory::Susceptible),
+      active_itinerary_entry_(nullptr),
+      current_location(&home_) {
+  home_.enter(*this);
 }
 
 void Person::addItineraryEntry(ItineraryEntry new_entry) {
   itinerary_.push_back(new_entry);
+  model_.addToSchedule(
+      new_entry.startTime(),
+      std::bind(&Person::beginItineraryEntry, this, itinerary_.back()));
+  model_.addToSchedule(
+      new_entry.endTime(),
+      std::bind(&Person::endItineraryEntry, this, itinerary_.back()));
+}
+
+///
+/// Moves the person from one location to another.
+///
+void Person::moveToLocation(Location& location) {
+  current_location->leave(*this);
+  current_location = &location;
+  current_location->enter(*this);
+}
+
+///
+/// Callback to be used with the Model's schedule
+///
+/// When this callback is called, the person initiates a move according to his
+/// itinerary. If another itinerary entry was active, this one takes precedence.
+///
+void Person::beginItineraryEntry(ItineraryEntry& entry) {
+  active_itinerary_entry_ = &entry;
+  moveToLocation(entry.location());
+}
+
+///
+/// Callback to be used with the Model's schedule
+///
+/// When this callback is called, the person evaluates if this itinerary entry
+/// is still valid. If so, he moves home as no other entry has taken precedence.
+///
+void Person::endItineraryEntry(ItineraryEntry& entry) {
+  // Compare the addresses to check if they are the same entry.
+  if (&entry == active_itinerary_entry_) {
+    moveToLocation(home_);
+  }
+  // TODO: Think about whether to delete the old entries. Now they are just left
+  // there in the itinerary. Deleting them could be in efficient as we are using
+  // a vector, but a list may be more suited.
 }
 
 void Person::infect() {
@@ -56,5 +99,7 @@ void Person::updateInfection() {
 }
 
 InfectionCategory Person::infectionState() { return infection_state_; }
+
+uint32_t Person::id() const { return id_; }
 
 }  // namespace epideux

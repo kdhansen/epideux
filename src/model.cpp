@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#include <algorithm>
+#include <stdexcept>
+
 #include "epideux/epideux.h"
 
 using namespace std::chrono_literals;
@@ -58,17 +61,22 @@ void Model::simulate(time_duration simulation_duration) {
   // Generate reporting steps and put into schedule
   time_pt stop_sim_at = current_sim_time_ + simulation_duration;
   for (time_pt t = current_sim_time_; t < stop_sim_at; t += report_interval_) {
-    schedule_.push_back(
-        std::make_pair(t, std::bind(&Model::collectSeir, this)));
+    schedule_.emplace_back(t, std::bind(&Model::collectSeir, this));
   }
+  // Insert simulation stop event.
+  schedule_.emplace_back(stop_sim_at, std::bind(&Model::stopSimulation, this));
+
+  // Sort the schedule so everything is executed in order.
+  std::sort(schedule_.begin(), schedule_.end());
+  simulation_running_ = true;
 
   // Step through schedule
   logger_->debug("Starting simulation [simtime: {}]", getCurrentTimeString());
 
   while ((current_sim_time_ < stop_sim_at) && (schedule_.size() > 0)) {
     auto schedule_entry = schedule_.front();
-    current_sim_time_ = schedule_entry.first;
-    schedule_entry.second();
+    current_sim_time_ = schedule_entry.scheduled_time;
+    schedule_entry.callback();
     schedule_.pop_front();
     logger_->debug("Reported at [simtime: {}]", getCurrentTimeString());
   }
@@ -76,6 +84,7 @@ void Model::simulate(time_duration simulation_duration) {
   current_sim_time_ += simulation_duration;
 
   logger_->debug("Stoping simulation [simtime: {}]", getCurrentTimeString());
+  simulation_running_ = false;
 }
 
 void Model::setStartDate(int year, int month, int day) {
@@ -99,22 +108,26 @@ std::string Model::getCurrentTimeString() {
   return time_string;
 }
 
-std::shared_ptr<Location> Model::createLocation(double beta, std::string name) {
-  auto l = std::make_shared<Location>(*this, beta, name);
-  locations_.push_back(l);
-  return l;
+Location& Model::createLocation(double beta, std::string name) {
+  locations_.emplace_back(*this, beta, name);
+  return locations_.back();
 }
 
-std::shared_ptr<Person> Model::createPerson(std::shared_ptr<Location> home,
-                                            time_duration incubation_time,
-                                            time_duration disease_time) {
-  auto p = std::make_shared<Person>(*this, getNextId(), home, incubation_time,
-                                    disease_time);
-  persons_.push_back(p);
-  return p;
+Person& Model::createPerson(Location& home, time_duration incubation_time,
+                            time_duration disease_time) {
+  persons_.emplace_back(*this, getNextId(), home, incubation_time,
+                        disease_time);
+  return persons_.back();
 }
 
-std::shared_ptr<Person> Model::getPerson(size_t i) { return persons_.at(i); }
+Person& Model::getPerson(uint32_t i) {
+  auto it = std::find_if(persons_.begin(), persons_.end(),
+                         [i](const Person& p) { return p.id() == i; });
+  if (it == persons_.end()) {
+    throw std::out_of_range("Person not found");
+  }
+  return *it;
+}
 
 SeirReport Model::getReport() { return report_; }
 
@@ -132,9 +145,9 @@ void Model::collectSeir() {
   uint32_t i = 0;
   uint32_t r = 0;
 
-  for (const auto& l : locations_) {
-    l->updateInfections();
-    for (const auto& p : l->getPersons()) {
+  for (auto& l : locations_) {
+    l.updateInfections();
+    for (const auto& p : l.getPersons()) {
       switch (p->infectionState()) {
         case InfectionCategory::Susceptible:
           s++;
@@ -159,6 +172,11 @@ void Model::collectSeir() {
 }
 
 ///
+/// Callback that is being called when the simulation stops.
+///
+void Model::stopSimulation() { return; }
+
+///
 /// Get the random generator from the model.
 ///
 /// Use this generator for all randomness, then a single seed can control and
@@ -170,5 +188,19 @@ std::mt19937& Model::randomGenerator() { return random_generator_; };
 /// Get the next id for a new agent
 ///
 uint32_t Model::getNextId() { return last_id_++; }
+
+///
+/// Add a callback to the schedule
+///
+/// This is used but the agents to schedule the movements in their itineraries.
+///
+void Model::addToSchedule(time_pt scheduled_time,
+                          std::function<void()> callback) {
+  if (simulation_running_) {
+    // TODO:
+  } else {
+    schedule_.push_back(ScheduleEntry(scheduled_time, callback));
+  }
+}
 
 }  // namespace epideux
