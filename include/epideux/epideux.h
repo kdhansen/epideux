@@ -55,15 +55,15 @@ class Location {
   Location& operator=(const Location&) = delete;
   Location(Location&&) = delete;
   Location& operator=(Location&&) = delete;
-  const std::vector<Person*>& getPersons() const;
+  const std::list<Person*>& getPersons() const;
   void updateInfections();
-  void enter(Person& new_person);
-  void leave(Person& leaving_person);
+  std::function<void()> enter(Person& new_person);
+  void leave(std::list<Person*>::iterator& leaving_person_it);
 
  private:
   Model& model_;
   std::string name_;
-  std::vector<Person*> persons_;
+  std::list<Person*> persons_;
   time_pt last_update_;
   double beta_per_sec_;
 };
@@ -105,6 +105,7 @@ class Person {
   time_duration disease_time_;
   const ItineraryEntry* active_itinerary_entry_;
   Location* current_location;
+  std::function<void()> leave_callback_;
   void moveToLocation(Location& location);
   void beginItineraryEntry(ItineraryEntry& entry);
   void endItineraryEntry(ItineraryEntry& entry);

@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 
 #include "epideux/epideux.h"
 
@@ -37,7 +38,7 @@ Location::Location(Model& simulation_model, double beta, std::string name)
 ///
 /// @returns A reference to the internal list of persons in the location.
 ///
-const std::vector<Person*>& Location::getPersons() const { return persons_; }
+const std::list<Person*>& Location::getPersons() const { return persons_; }
 
 ///
 /// Evaluates any possible infections since last update.
@@ -87,22 +88,36 @@ void Location::updateInfections() {
   int num_infected = binom_dist(model_.randomGenerator());
   if (num_infected > 0) {
     std::uniform_int_distribution<int> uni_dist(0, num_persons_here - 1);
-    for (int i = 0; i < num_infected; ++i) {
-      persons_[uni_dist(model_.randomGenerator())]->infect();
+    auto& gen = model_.randomGenerator();
+    std::vector<size_t> infected_indexes(num_infected);
+    std::generate(infected_indexes.begin(), infected_indexes.end(),
+                  [&uni_dist, &gen](){ return uni_dist(gen); });
+    std::sort(infected_indexes.begin(), infected_indexes.end());
+    // turn indexes into increments as list iterators are not random access and
+    // need to be advanced forward.
+    for (int i = infected_indexes.size()-1; i > 0 ; --i) {
+      infected_indexes[i] -= infected_indexes[i-1];
+    }
+    auto persons_it = persons_.begin();
+    for (auto i : infected_indexes) {
+      std::advance(persons_it, i);
+      (*persons_it)->infect();
     }
   }
 }
 
-void Location::enter(Person& new_person) {
+std::function<void()> Location::enter(Person& new_person) {
   // TODO: Should maybe evaluate whether person is allowed in.
   updateInfections();
   persons_.push_back(&new_person);
+  std::list<Person*>::iterator new_person_it = persons_.end();
+  new_person_it--;
+  return std::bind(&Location::leave, this, new_person_it);
 }
 
-void Location::leave(Person& leaving_person) {
+void Location::leave(std::list<Person*>::iterator& leaving_person_it) {
   updateInfections();
-  persons_.erase(std::remove(persons_.begin(), persons_.end(), &leaving_person),
-                 persons_.end());
+  persons_.erase(leaving_person_it);
 }
 
 }  // namespace epideux

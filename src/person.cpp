@@ -31,7 +31,7 @@ Person::Person(Model& simulation_model, uint32_t id, Location& home,
       infection_state_(InfectionCategory::Susceptible),
       active_itinerary_entry_(nullptr),
       current_location(&home_) {
-  home_.enter(*this);
+  leave_callback_ = home_.enter(*this);
 }
 
 void Person::addItineraryEntry(ItineraryEntry new_entry) {
@@ -48,9 +48,9 @@ void Person::addItineraryEntry(ItineraryEntry new_entry) {
 /// Moves the person from one location to another.
 ///
 void Person::moveToLocation(Location& location) {
-  current_location->leave(*this);
+  leave_callback_();
   current_location = &location;
-  current_location->enter(*this);
+  leave_callback_ = current_location->enter(*this);
 }
 
 ///
