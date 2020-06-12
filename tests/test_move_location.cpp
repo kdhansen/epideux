@@ -42,6 +42,12 @@ int main(int argc, char const *argv[]) {
 
   std::cout << " (2h) ";
   std::cout << location1.getPersons().size() << '/'
+            << location2.getPersons().size();
+
+  sim_model.simulate(2h);
+
+  std::cout << " (2h) ";
+  std::cout << location1.getPersons().size() << '/'
             << location2.getPersons().size() << std::endl;
 
   return 0;
