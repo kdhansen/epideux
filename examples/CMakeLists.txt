@@ -9,3 +9,8 @@ add_executable(two_age two_age.cpp)
 set_property(TARGET two_age PROPERTY CXX_STANDARD 17)
 target_include_directories(two_age PRIVATE include ${Python3_INCLUDE_DIRS} ${Python3_NumPy_INCLUDE_DIRS})
 target_link_libraries(two_age epideux_engine Python3::Python Python3::NumPy)
+
+add_executable(schedule_fails schedule_fails.cpp)
+set_property(TARGET schedule_fails PROPERTY CXX_STANDARD 17)
+target_include_directories(schedule_fails PRIVATE include)
+target_link_libraries(schedule_fails epideux_engine)

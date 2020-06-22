@@ -120,4 +120,35 @@ void Location::leave(std::list<Person*>::iterator& leaving_person_it) {
   persons_.erase(leaving_person_it);
 }
 
+///
+/// Go through all agents and record their infection state.
+///
+SeirReport Location::collectSeir() {
+  updateInfections();
+
+  SeirReport a_report;
+  for (auto& p : persons_) {
+    switch (p->infectionState()) {
+        case InfectionCategory::Susceptible:
+          a_report.susceptible++;
+          break;
+        case InfectionCategory::Exposed:
+          a_report.exposed++;
+          break;
+        case InfectionCategory::Infectious:
+          a_report.infectious++;
+          break;
+        case InfectionCategory::Recovered:
+          a_report.recovered++;
+          break;
+    }
+  }
+
+  return a_report;
+}
+
+void Location::setBeta(double new_beta) {
+  beta_per_sec_ = new_beta / 86400;
+}
+
 }  // namespace epideux

@@ -129,46 +129,51 @@ Person& Model::getPerson(uint32_t i) {
   return *it;
 }
 
-SeirReport Model::getReport() { return report_; }
+///
+/// Get the latest SEIR report
+///
+SeirReport Model::getReport() { return latest_report_; }
+
+///
+/// Get all the daily SEIR reports since the simulation start
+///
+SeirTimeline Model::getDailyReports() { return daily_reports_; }
 
 ///
 /// Go through all agents and record their infection state.
 ///
 /// This method go through all locations and 1) updates the infections at the
-/// locations, 2) collects the infection status of the people at the locations.
+/// locations, 2) collects the infection status of the people in the model.
 /// In the end the infection state of all people in the simulation have been
 /// updated and recorded.
 ///
 void Model::collectSeir() {
-  uint32_t s = 0;
-  uint32_t e = 0;
-  uint32_t i = 0;
-  uint32_t r = 0;
-
   for (auto& l : locations_) {
     l.updateInfections();
-    for (const auto& p : l.getPersons()) {
-      switch (p->infectionState()) {
+  }
+
+  latest_report_.susceptible = 0;
+  latest_report_.exposed = 0;
+  latest_report_.infectious = 0;
+  latest_report_.recovered = 0;
+  for (auto& p : persons_) {
+    switch (p.infectionState()) {
         case InfectionCategory::Susceptible:
-          s++;
+          latest_report_.susceptible++;
           break;
         case InfectionCategory::Exposed:
-          e++;
+          latest_report_.exposed++;
           break;
         case InfectionCategory::Infectious:
-          i++;
+          latest_report_.infectious++;
           break;
         case InfectionCategory::Recovered:
-          r++;
+          latest_report_.recovered++;
           break;
-      }
     }
   }
 
-  report_.susceptible.push_back(s);
-  report_.exposed.push_back(e);
-  report_.infectious.push_back(i);
-  report_.recovered.push_back(r);
+  daily_reports_.push_back(latest_report_);
 }
 
 ///

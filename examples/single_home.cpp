@@ -35,14 +35,24 @@ int main(int argc, char const *argv[]) {
   std::chrono::duration<double> sim_time(end-start);
   console->info("Simulation took {} s", sim_time.count());
 
-  auto report = sim_model.getReport();
+  std::vector<uint32_t> susceptible_v;
+  std::vector<uint32_t> exposed_v;
+  std::vector<uint32_t> infectious_v;
+  std::vector<uint32_t> recovered_v;
+  auto reports = sim_model.getDailyReports();
+  for (auto& r : reports) {
+    susceptible_v.push_back(r.susceptible);
+    exposed_v.push_back(r.exposed);
+    infectious_v.push_back(r.infectious);
+    recovered_v.push_back(r.recovered);
+  }
 
   plt::xkcd();
   plt::figure();
-  plt::named_plot("Susceptible", report.susceptible);
-  plt::named_plot("Exposed", report.exposed);
-  plt::named_plot("Infectious", report.infectious);
-  plt::named_plot("Recovered", report.recovered);
+  plt::named_plot("Susceptible", susceptible_v);
+  plt::named_plot("Exposed", exposed_v);
+  plt::named_plot("Infectious", infectious_v);
+  plt::named_plot("Recovered", recovered_v);
   plt::legend();
   plt::show();
 

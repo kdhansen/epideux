@@ -42,11 +42,13 @@ typedef std::chrono::system_clock::duration time_duration;
 enum class InfectionCategory { Susceptible, Exposed, Infectious, Recovered };
 
 struct SeirReport {
-  std::vector<uint32_t> susceptible;
-  std::vector<uint32_t> exposed;
-  std::vector<uint32_t> infectious;
-  std::vector<uint32_t> recovered;
+  uint32_t susceptible = 0;
+  uint32_t exposed = 0;
+  uint32_t infectious = 0;
+  uint32_t recovered = 0;
 };
+
+typedef std::vector<SeirReport> SeirTimeline;
 
 class Location {
  public:
@@ -59,6 +61,8 @@ class Location {
   void updateInfections();
   std::function<void()> enter(Person& new_person);
   void leave(std::list<Person*>::iterator& leaving_person_it);
+  SeirReport collectSeir();
+  void setBeta(double new_beta);
 
  private:
   Model& model_;
@@ -126,6 +130,7 @@ class Model {
   time_pt currentTime();
   Person& getPerson(uint32_t i);
   SeirReport getReport();
+  SeirTimeline getDailyReports();
   std::mt19937& randomGenerator();
   void addToSchedule(time_pt scheduled_time, std::function<void()> callback);
 
@@ -135,7 +140,8 @@ class Model {
   bool simulation_running_ = false;
   std::shared_ptr<spdlog::logger> logger_;
   time_pt current_sim_time_;
-  SeirReport report_;
+  SeirReport latest_report_;
+  SeirTimeline daily_reports_;
   time_duration report_interval_;
   void collectSeir();
   void stopSimulation();
