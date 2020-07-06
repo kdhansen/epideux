@@ -151,4 +151,6 @@ void Location::setBeta(double new_beta) {
   beta_per_sec_ = new_beta / 86400;
 }
 
+std::string Location::name() { return name_; }
+
 }  // namespace epideux

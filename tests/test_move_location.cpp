@@ -32,8 +32,10 @@ int main(int argc, char const *argv[]) {
   time_pt end_time = start_time + 2h;
   ItineraryEntry loc2_it(location2, start_time, end_time);
 
-  Person& my_person = sim_model.createPerson(location1, 4*24h, 7*24h);
-  my_person.addItineraryEntry(loc2_it);
+  for (int i = 0; i < 10; ++i) {
+    Person& my_person = sim_model.createPerson(location1, 4*24h, 7*24h);
+    my_person.addItineraryEntry(loc2_it);
+  }
 
   std::cout << "Persons in location 1/2: " << location1.getPersons().size()
             << '/' << location2.getPersons().size();

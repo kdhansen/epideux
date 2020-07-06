@@ -63,6 +63,7 @@ class Location {
   void leave(std::list<Person*>::iterator& leaving_person_it);
   SeirReport collectSeir();
   void setBeta(double new_beta);
+  std::string name();
 
  private:
   Model& model_;
@@ -102,7 +103,7 @@ class Person {
   Model& model_;
   uint32_t id_;
   Location& home_;
-  std::vector<ItineraryEntry> itinerary_;
+  std::list<ItineraryEntry> itinerary_;
   InfectionCategory infection_state_;
   time_pt infected_date_;
   time_duration incubation_time_;
@@ -111,8 +112,8 @@ class Person {
   Location* current_location;
   std::function<void()> leave_callback_;
   void moveToLocation(Location& location);
-  void beginItineraryEntry(ItineraryEntry& entry);
-  void endItineraryEntry(ItineraryEntry& entry);
+  void beginItineraryEntry(ItineraryEntry* entry);
+  void endItineraryEntry(ItineraryEntry* entry);
 };
 
 class Model {
@@ -152,11 +153,19 @@ class Model {
 
   struct ScheduleEntry {
     ScheduleEntry(time_pt t, std::function<void()> cb)
-        : scheduled_time(t), callback(cb){};
+        : scheduled_time(t), callback(cb) {};
+    ScheduleEntry(ScheduleEntry&& other)
+        : scheduled_time(std::move(other.scheduled_time))
+        , callback(std::move(other.callback)) {};
     time_pt scheduled_time;
     std::function<void()> callback;
     bool operator<(const ScheduleEntry& rhs) {
       return scheduled_time < rhs.scheduled_time;
+    }
+    ScheduleEntry& operator= (ScheduleEntry&& other) {
+         scheduled_time = std::move(other.scheduled_time);
+         callback = std::move(other.callback);
+         return *this;
     }
   };
   std::deque<ScheduleEntry> schedule_;

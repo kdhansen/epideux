@@ -74,7 +74,7 @@ void Model::simulate(time_duration simulation_duration) {
   logger_->debug("Starting simulation [simtime: {}]", getCurrentTimeString());
 
   while ((current_sim_time_ < stop_sim_at) && (schedule_.size() > 0)) {
-    auto schedule_entry = schedule_.front();
+    auto& schedule_entry = schedule_.front();
     current_sim_time_ = schedule_entry.scheduled_time;
     schedule_entry.callback();
     schedule_.pop_front();
