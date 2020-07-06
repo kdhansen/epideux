@@ -1,15 +1,17 @@
 #include <cstdlib>
+#include <iostream>
 #include "epideux/epideux.h"
 #include "matplotlibcpp/matplotlibcpp.h"
 
 #include "spdlog/spdlog.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
 
 int main(int argc, char const *argv[]) {
+  spdlog::set_level(spdlog::level::info);
+
   // Process arguments
-  auto console = spdlog::stdout_color_mt("console");
   if (argc != 5) {
-    console->error("Please provide [number of young people] [old people] [beta] [simulation days]");
+    std::cout << "Please provide [number of young people] [old people] [beta] [simulation days]";
+    return -1;
   }
   int num_young_people = std::atoi(argv[1]);
   int num_old_people = std::atoi(argv[2]);
@@ -29,6 +31,7 @@ int main(int argc, char const *argv[]) {
   for (int i = 0; i < num_old_people; ++i) {
     Person& a_person = sim_model.createPerson(old_home, 4*24h, 5*24h);
   }
+  spdlog::info("{} old people spawned.", num_old_people);
 
   // Create a pool of young people and infect one
   Location& young_home = sim_model.createLocation(beta);
@@ -41,6 +44,7 @@ int main(int argc, char const *argv[]) {
       a_person.addItineraryEntry(old_it);
     }
   }
+  spdlog::info("{} young people spawned.", num_young_people);
   sim_model.getPerson(num_old_people).infect();
 
   // Run model and time it.
@@ -48,18 +52,18 @@ int main(int argc, char const *argv[]) {
   sim_model.simulate(24h*sim_days);
   auto end = std::chrono::steady_clock::now();
   std::chrono::duration<double> sim_time(end-start);
-  console->info("Simulation took {} s", sim_time.count());
+  spdlog::info("Simulation took {} s", sim_time.count());
 
-  std::vector<uint32_t> susceptible_v;
-  std::vector<uint32_t> exposed_v;
-  std::vector<uint32_t> infectious_v;
-  std::vector<uint32_t> recovered_v;
+  std::vector<int> susceptible_v;
+  std::vector<int> exposed_v;
+  std::vector<int> infectious_v;
+  std::vector<int> recovered_v;
   auto reports = sim_model.getDailyReports();
   for (auto& r : reports) {
-    susceptible_v.push_back(r.susceptible);
-    exposed_v.push_back(r.exposed);
-    infectious_v.push_back(r.infectious);
-    recovered_v.push_back(r.recovered);
+    susceptible_v.push_back(double(r.susceptible));
+    exposed_v.push_back(double(r.exposed));
+    infectious_v.push_back(double(r.infectious));
+    recovered_v.push_back(double(r.recovered));
   }
 
   plt::xkcd();
