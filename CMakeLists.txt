@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.16)
 
 project(epideux)
 
@@ -10,8 +10,8 @@ src/location.cpp
 src/itinerary_entry.cpp
 include/epideux/epideux.h)
 
+include(CTest)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
-  include(CTest)
   add_subdirectory(tests)
 endif()
 
